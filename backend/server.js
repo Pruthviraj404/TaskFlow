@@ -23,8 +23,24 @@ app.get("/",(req,res)=>{
 
 app.get("/api/tasks",async(req,res)=>{
     try{
-        const tasks= await db.all("SELECT * FROM tasks");
+
+        const {status} = req.query;
+
+        let tasks;
+
+        if(status==="overdue"){
+
+        
+        tasks= await db.all(`SELECT * FROM tasks WHERE due_date < DATE('now') AND is_done =0`);
+       
+        }
+        else{
+            tasks = await db.all('SELECT * FROM tasks');
+             
+        }
         res.json(tasks);
+           
+
     }catch(error){
         console.error(error);
         res.status(500).json({error:"Something went wrong"});
@@ -86,6 +102,26 @@ app.delete("/api/tasks/:id", async(req,res)=>{
 }  
 
 });
+
+app.patch("/api/tasks/:id/done", async(req,res)=>{
+    try{
+        const id= req.params.id;
+
+        const result= await db.run(
+            "UPDATE tasks SET is_done = NOT is_done WHERE id =?",[id]
+        );
+
+        if(result.changes===0){
+            res.status(404).json({message:"Task Not Found !"})
+        }
+
+        res.status(201).json({message:"Task Status Toggled Successfully"});
+
+
+    }catch(error){
+        res.status(500).json("Something went wrong!");
+    }
+})
 
 app.listen(PORT,()=>{
     console.log(`Server is Running on PORT: ${PORT}`);
