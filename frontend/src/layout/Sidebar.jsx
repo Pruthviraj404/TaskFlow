@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layout, Clock, LayoutDashboard, CheckCircle2, Briefcase, User, BookOpen, Settings } from 'lucide-react';
+import { Layout, Clock, LayoutDashboard, CheckCircle2, Briefcase, User, BookOpen, Settings, LogOut } from 'lucide-react';
 
 const SidebarItem = ({ icon: Icon, label, count, active, onClick, color }) => (
   <button 
@@ -16,7 +16,14 @@ const SidebarItem = ({ icon: Icon, label, count, active, onClick, color }) => (
   </button>
 );
 
-export default function Sidebar({ tasks, stats, activeScreen, setActiveScreen, filter, setFilter }) {
+// Added 'user' and 'onLogout' to props
+export default function Sidebar({ tasks, stats, activeScreen, setActiveScreen, filter, setFilter, user, onLogout }) {
+  
+  // Get initials for the avatar (e.g., "Pruthviraj Patil" -> "PP")
+  const getInitials = (name) => {
+    return name ? name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) : '??';
+  };
+
   return (
     <aside className="w-64 bg-[#1E1E1E] text-white flex flex-col shrink-0 shadow-2xl">
       <div className="p-6">
@@ -42,14 +49,25 @@ export default function Sidebar({ tasks, stats, activeScreen, setActiveScreen, f
         </div>
       </div>
 
-      <div className="mt-auto p-4 border-t border-white/10">
-        <button onClick={() => setActiveScreen('settings')} className="flex items-center gap-3 w-full p-2 hover:bg-white/5 rounded-lg transition-all">
-          <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-xs">RK</div>
-          <div className="text-left overflow-hidden">
-            <p className="text-sm font-semibold truncate">Rahul K.</p>
-            <p className="text-[10px] text-gray-400 truncate">rahul.k@sankey.com</p>
+      {/* USER PROFILE SECTION */}
+      <div className="mt-auto p-4 border-t border-white/10 space-y-2">
+        <div className="flex items-center gap-3 w-full p-2">
+          <div className="w-8 h-8 shrink-0 rounded-full bg-blue-600 flex items-center justify-center font-bold text-xs">
+            {getInitials(user?.name)}
           </div>
-          <Settings size={14} className="ml-auto text-gray-400" />
+          <div className="text-left overflow-hidden">
+            <p className="text-sm font-semibold truncate">{user?.name || 'Guest'}</p>
+            <p className="text-[10px] text-gray-400 truncate">{user?.email || 'No email'}</p>
+          </div>
+          <Settings size={14} className="ml-auto text-gray-400 cursor-pointer hover:text-white" onClick={() => setActiveScreen('settings')} />
+        </div>
+        
+        <button 
+          onClick={onLogout}
+          className="flex items-center gap-3 w-full px-3 py-2 text-xs font-bold text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+        >
+          <LogOut size={14} />
+          Logout
         </button>
       </div>
     </aside>

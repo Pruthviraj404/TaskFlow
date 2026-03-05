@@ -7,21 +7,26 @@ import AddTaskModal from "./components/tasks/AddTaskModal";
 import AuthPage from './pages/auth/AuthPage';
 
 export default function App() {
-  const [activeScreen, setActiveScreen] = useState('list');
+ const [activeScreen, setActiveScreen] = useState('list');
   const [filter, setFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [user,setUser] = useState(null);
+  const [user, setUser] = useState(null);
 
-  if(!user){
-    return <AuthPage onLogin={(userData)=>setUser(userData)}/>;
+  // 1. Move the hook call AFTER the user check logic if you want to be safe, 
+  // or pass the user ID as a dependency.
+  const userId = user?.id;
+  const { tasks, filteredTasks, stats, handleToggle, handleDelete, handleAdd } = useTasks(filter, searchQuery, userId);
+
+  if (!user) {
+    return <AuthPage onLogin={(userData) => setUser(userData)} />;
   }
-  
-  const { tasks, filteredTasks, stats, handleToggle, handleDelete, handleAdd } = useTasks(filter, searchQuery);
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-[#F9FAFB]">
       <Sidebar 
+        user={user} // 2. Pass the user object to show their name/profile
+        onLogout={() => setUser(null)} // 3. Add a logout function
         tasks={tasks}
         stats={stats} 
         activeScreen={activeScreen} 
