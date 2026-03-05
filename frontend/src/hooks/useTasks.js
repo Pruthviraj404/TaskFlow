@@ -2,11 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import * as TaskService from '../services/TaskService';
 
 export const useTasks = (filter, searchQuery) => {
-  const [tasks, setTasks] = useState([
-    { id: 101, title: 'AiValytics Schema Setup', category: 'Work', priority: 'high', due_date: '2026-03-05', is_done: 0 },
-    { id: 102, title: 'LeetCode Daily (Medium)', category: 'Study', priority: 'medium', due_date: '2026-03-04', is_done: 1 },
-    { id: 103, title: 'MLSA Club Planning', category: 'Work', priority: 'medium', due_date: '2026-03-06', is_done: 0 }
-  ]);
+  const [tasks, setTasks] = useState([]);
 
   
 

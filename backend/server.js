@@ -1,7 +1,7 @@
 import express from "express";
 import { connectDB } from "./database.js";
 import cors from 'cors';
-
+import bcrypt from 'bcrypt';
 const app = express();
 
 
@@ -17,6 +17,50 @@ let db;
     db=await connectDB();
 })();
 
+
+
+app.post("/api/signup",async(req,res)=>{
+    try{
+        const {name,email,password}= req.body;
+        const saltRounds=10;
+
+        const hashedPassword = await bcrypt.hash(password,saltRounds);
+
+        const result = await db.run(
+            "INSERT INTO users (name,email,password) VALUES (?,?,?)",[name,email,hashedPassword]
+        );
+
+        res.status(201).json({id:result.lastID,name,email});
+    }catch(error){
+        res.status(500).json({error:"User Already Exists or Database error"});
+
+    }
+});
+
+
+app.post("/api/login",async(req,res)=>{
+    try{
+        const {email,password}=req.body;
+
+        const user = await db.get("SELECT * FROM users WHERE email = ?",[email]);
+
+        if(!user){
+            res.status(401).json({error:"Invalid Credentials"});
+            
+        }
+
+        const isMatch = await bcrypt.compare(password,user.password);
+
+        if(isMatch){
+            res.json({id:user.id,name:user.name,email:user.email});
+        }else{
+            res.status(401).json({error:"Invalid credentials"});
+            
+        }
+    }catch(error){
+        res.status(500).json({error:"server error"});
+    }
+});
 
 app.get("/",(req,res)=>{
     res.send("Task Flow is Running!");

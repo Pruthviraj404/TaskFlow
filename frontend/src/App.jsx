@@ -4,13 +4,19 @@ import Dashboard from "./pages/Dashboard";
 import TaskPage from "./pages/TaskPage";
 import { useTasks } from "./hooks/useTasks";
 import AddTaskModal from "./components/tasks/AddTaskModal";
+import AuthPage from './pages/auth/AuthPage';
 
 export default function App() {
   const [activeScreen, setActiveScreen] = useState('list');
   const [filter, setFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [user,setUser] = useState(null);
 
+  if(!user){
+    return <AuthPage onLogin={(userData)=>setUser(userData)}/>;
+  }
+  
   const { tasks, filteredTasks, stats, handleToggle, handleDelete, handleAdd } = useTasks(filter, searchQuery);
 
   return (
