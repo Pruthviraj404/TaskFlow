@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 
 export default function AddTaskModal({ onClose, onSave }) {
   const [formData, setFormData] = useState({
+  
     title: '',
     description: '',
     category: 'work',

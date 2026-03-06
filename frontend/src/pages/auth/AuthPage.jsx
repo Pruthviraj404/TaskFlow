@@ -6,11 +6,12 @@ export default function AuthPage({ onLogin }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const endpoint = isLogin ? '/api/login' : '/api/signup';
+    const endpoint = isLogin ? '/api/auth/login' : '/api/auth/signup';
     try {
       const res = await fetch(`http://localhost:5000${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials:"include",
         body: JSON.stringify(formData),
       });
       const data = await res.json();
