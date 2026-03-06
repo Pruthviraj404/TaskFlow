@@ -16,12 +16,13 @@ const SidebarItem = ({ icon: Icon, label, count, active, onClick, color }) => (
   </button>
 );
 
-// Added 'user' and 'onLogout' to props
 export default function Sidebar({ tasks, stats, activeScreen, setActiveScreen, filter, setFilter, user, onLogout }) {
   
-  // Get initials for the avatar (e.g., "Pruthviraj Patil" -> "PP")
   const getInitials = (name) => {
-    return name ? name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) : '??';
+    if (!name) return '??';
+    const parts = name.trim().split(' ');
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   };
 
   return (
@@ -32,10 +33,32 @@ export default function Sidebar({ tasks, stats, activeScreen, setActiveScreen, f
         <div className="mb-6">
           <p className="text-[10px] font-bold text-gray-500 mb-3 px-2 uppercase tracking-widest">Menu</p>
           <nav className="space-y-1">
-            <SidebarItem icon={Layout} label="All Tasks" count={tasks.length} active={activeScreen === 'list' && filter === 'All'} onClick={() => {setActiveScreen('list'); setFilter('All');}} />
-            <SidebarItem icon={Clock} label="Today" count={stats.pending} active={filter === 'Today'} onClick={() => {setActiveScreen('list'); setFilter('Today');}} />
-            <SidebarItem icon={LayoutDashboard} label="Overview" active={activeScreen === 'dashboard'} onClick={() => setActiveScreen('dashboard')} />
-            <SidebarItem icon={CheckCircle2} label="Completed" active={filter === 'Completed'} onClick={() => {setActiveScreen('list'); setFilter('Completed');}} />
+            <SidebarItem 
+              icon={Layout} 
+              label="All Tasks" 
+              count={tasks.length} 
+              active={activeScreen === 'list' && filter === 'All'} 
+              onClick={() => {setActiveScreen('list'); setFilter('All');}} 
+            />
+            <SidebarItem 
+              icon={Clock} 
+              label="Today" 
+              count={stats.pending} 
+              active={filter === 'Today'} 
+              onClick={() => {setActiveScreen('list'); setFilter('Today');}} 
+            />
+            <SidebarItem 
+              icon={LayoutDashboard} 
+              label="Overview" 
+              active={activeScreen === 'dashboard'} 
+              onClick={() => setActiveScreen('dashboard')} 
+            />
+            <SidebarItem 
+              icon={CheckCircle2} 
+              label="Completed" 
+              active={filter === 'Completed'} 
+              onClick={() => {setActiveScreen('list'); setFilter('Completed');}} 
+            />
           </nav>
         </div>
 
@@ -49,7 +72,6 @@ export default function Sidebar({ tasks, stats, activeScreen, setActiveScreen, f
         </div>
       </div>
 
-      {/* USER PROFILE SECTION */}
       <div className="mt-auto p-4 border-t border-white/10 space-y-2">
         <div className="flex items-center gap-3 w-full p-2">
           <div className="w-8 h-8 shrink-0 rounded-full bg-blue-600 flex items-center justify-center font-bold text-xs">
@@ -59,7 +81,11 @@ export default function Sidebar({ tasks, stats, activeScreen, setActiveScreen, f
             <p className="text-sm font-semibold truncate">{user?.name || 'Guest'}</p>
             <p className="text-[10px] text-gray-400 truncate">{user?.email || 'No email'}</p>
           </div>
-          <Settings size={14} className="ml-auto text-gray-400 cursor-pointer hover:text-white" onClick={() => setActiveScreen('settings')} />
+          <Settings 
+            size={14} 
+            className="ml-auto text-gray-400 cursor-pointer hover:text-white" 
+            onClick={() => setActiveScreen('settings')} 
+          />
         </div>
         
         <button 
