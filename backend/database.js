@@ -8,6 +8,8 @@ export async function connectDB() {
     driver:sqlite3.Database,
    });
 
+   await db.exec("PRAGMA foreign_keys = ON");
+
 
     await db.exec( `
 
@@ -24,7 +26,7 @@ export async function connectDB() {
 
         CREATE TABLE IF NOT EXISTS tasks(
         id   INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
+        user_id INTEGER NOT NULL,
         title   TEXT NOT NULL,
         description TEXT,
         category TEXT CHECK( category IN ('work', 'personal','study')),
