@@ -2,64 +2,57 @@ import React, { useState, useEffect } from "react";
 import Sidebar from "./layout/Sidebar"; 
 import Dashboard from "./pages/Dashboard";
 import TaskPage from "./pages/TaskPage";
+import Overview from "./pages/Overview"; 
+import Settings from "./pages/Settings";
 import { useTasks } from "./hooks/useTasks";
 import AddTaskModal from "./components/tasks/AddTaskModal";
 import AuthPage from "./pages/auth/AuthPage";
 
 export default function App() {
-  // Set default screen to "dashboard" for a better first impression
   const [activeScreen, setActiveScreen] = useState("dashboard");
   const [filter, setFilter] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [showModal, setShowModal] = useState(false);
-
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Check authentication status on mount
+  // 1. Authentication Lifecycle
   useEffect(() => {
     fetch("http://localhost:5000/api/auth/me", {
       credentials: "include"
     })
-      .then(res => res.json())
-      .then(data => {
-        // Fix: Since your API returns a flat object like {"id":2, "name":"Ajay"...}
-        if (data && data.id) {
-          setUser(data);
-        } else {
-          setUser(null);
-        }
-        setLoading(false);
+      .then(res => {
+        if (!res.ok) throw new Error("Session expired");
+        return res.json();
       })
-      .catch(() => {
-        setUser(null);
-        setLoading(false);
-      });
+      .then(data => {
+        const userData = data.user || (data.id ? data : null);
+        setUser(userData);
+      })
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false));
   }, []);
 
-  // Logout handler that clears backend cookies and local state
   const handleLogout = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/auth/logout", {
+      await fetch("http://localhost:5000/api/auth/logout", {
         method: "POST",
         credentials: "include",
       });
-
-      if (res.ok) {
-        setUser(null);
-        setActiveScreen("dashboard"); // Reset for next user
-      }
     } catch (err) {
-      console.error("Logout failed:", err);
-      setUser(null); // Fallback to local logout
+      console.error("Logout failed", err);
+    } finally {
+      setUser(null);
+      setActiveScreen("dashboard");
     }
   };
 
+  // 2. Task Logic Hook
   const userId = user?.id;
-
   const { tasks, filteredTasks, stats, handleToggle, handleDelete, handleAdd } =
     useTasks(filter, searchQuery, userId);
 
+  // 3. Conditional Rendering Guards
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-[#F9FAFB]">
@@ -70,13 +63,12 @@ export default function App() {
     );
   }
 
-  // Redirect logic: If no user, show AuthPage
   if (!user) {
     return (
       <AuthPage 
-        onLogin={(userData) => {
-          setUser(userData);
-          setActiveScreen("dashboard"); // Force dashboard view on login
+        onLogin={(data) => {
+          setUser(data.user || data);
+          setActiveScreen("dashboard");
         }} 
       />
     );
@@ -94,11 +86,34 @@ export default function App() {
         filter={filter}
         setFilter={setFilter}
       />
-
-      <main className="flex-1 overflow-y-auto relative">
+      
+      <main className="flex-1 overflow-y-auto relative bg-[#F9FAFB]">
+        {/* Screen 04: Overview Dashboard */}
         {activeScreen === "dashboard" ? (
-          <Dashboard stats={stats} tasks={tasks} />
-        ) : (
+          <Dashboard 
+            stats={stats} 
+            tasks={tasks} 
+            onToggle={handleToggle} 
+            setShowModal={setShowModal} 
+          />
+        ) 
+        /* Figure 3: Categories Expandable View */
+        : activeScreen === "overview" ? (
+          <Overview 
+            tasks={tasks} 
+            onToggle={handleToggle} 
+          />
+        ) 
+        /* Screen 05: Profile & Settings */
+        : activeScreen === "settings" ? (
+          <Settings 
+            user={user} 
+            onLogout={handleLogout} 
+            setActiveScreen={setActiveScreen} 
+          />
+        ) 
+        /* Task List View (All, Today, Completed, Category Filters) */
+        : (
           <TaskPage
             tasks={filteredTasks}
             searchQuery={searchQuery}
@@ -113,9 +128,9 @@ export default function App() {
       </main>
 
       {showModal && (
-        <AddTaskModal
-          onClose={() => setShowModal(false)}
-          onSave={handleAdd}
+        <AddTaskModal 
+          onClose={() => setShowModal(false)} 
+          onSave={handleAdd} 
         />
       )}
     </div>

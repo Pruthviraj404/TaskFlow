@@ -1,27 +1,35 @@
 import { useState, useEffect, useMemo } from 'react';
 import * as TaskService from '../services/TaskService';
 
-export const useTasks = (filter, searchQuery) => {
+export const useTasks = (filter, searchQuery, userId) => {
   const [tasks, setTasks] = useState([]);
 
-  
-
-  // Fetch from your Express backend on load
- 
-  useEffect(()=>{
-    const loadData = async ()=>{
-      try{
-        const data = await TaskService.getTasks();
-        setTasks(data);
-      }catch(error){
-        console.log("Failed to load tasks",error);
-      }
+  useEffect(() => {
+    if (!userId) {
+      setTasks([]);
+      return;
     }
+
+    const loadData = async () => {
+      try {
+        const data = await TaskService.getTasks();
+        if (Array.isArray(data)) {
+          setTasks(data);
+        } else {
+          setTasks([]);
+        }
+      } catch (error) {
+        console.error("Failed to load tasks:", error);
+        setTasks([]);
+      }
+    };
+
     loadData();
-  },[])
+  }, [userId]);
+
   const handleToggle = async (id) => {
     try {
-      await TaskService.toggleTaskStatus(id);
+      await TaskService.ToggleTaskStatus(id);
       setTasks(prev => prev.map(t => 
         t.id === id ? { ...t, is_done: t.is_done === 1 ? 0 : 1 } : t
       ));
@@ -49,29 +57,48 @@ export const useTasks = (filter, searchQuery) => {
     }
   };
 
-  // Stats calculation
   const stats = useMemo(() => {
+    const currentTasks = Array.isArray(tasks) ? tasks : [];
     const today = new Date().toISOString().split('T')[0];
-    const completed = tasks.filter(t => t.is_done === 1).length;
+    const completed = currentTasks.filter(t => t.is_done === 1).length;
+    
     return {
-      total: tasks.length,
-      pending: tasks.filter(t => t.is_done === 0).length,
+      total: currentTasks.length,
+      pending: currentTasks.filter(t => t.is_done === 0).length,
       completed,
-      overdue: tasks.filter(t => t.due_date < today && t.is_done === 0).length,
-      rate: tasks.length ? Math.round((completed / tasks.length) * 100) : 0
+      overdue: currentTasks.filter(t => t.due_date < today && t.is_done === 0).length,
+      // Calculates progress ring percentage for Screen 04
+      rate: currentTasks.length ? Math.round((completed / currentTasks.length) * 100) : 0
     };
   }, [tasks]);
 
-  // Filtering logic
   const filteredTasks = useMemo(() => {
-    let list = [...tasks];
-    if (searchQuery) list = list.filter(t => t.title.toLowerCase().includes(searchQuery.toLowerCase()));
+    const list = Array.isArray(tasks) ? [...tasks] : [];
     const today = new Date().toISOString().split('T')[0];
+    
+    // 1. First apply search query filtering
+    let result = list;
+    if (searchQuery) {
+      result = result.filter(t => t.title?.toLowerCase().includes(searchQuery.toLowerCase()));
+    }
+
+    // 2. Apply Sidebar Navigation Filters
     switch (filter) {
-      case 'Today': return list.filter(t => t.due_date === today);
-      case 'Completed': return list.filter(t => t.is_done === 1);
-      case 'Overdue': return list.filter(t => t.due_date < today && t.is_done === 0);
-      default: return list;
+      case 'Today': 
+        return result.filter(t => t.due_date === today);
+      case 'Completed': 
+        return result.filter(t => t.is_done === 1);
+      case 'Overdue': 
+        return result.filter(t => t.due_date < today && t.is_done === 0);
+      
+      // NEW: Quick Filter Implementation for Sidebar categories
+      case 'work':
+      case 'personal':
+      case 'study':
+        return result.filter(t => t.category?.toLowerCase() === filter.toLowerCase());
+        
+      default: 
+        return result;
     }
   }, [tasks, filter, searchQuery]);
 
