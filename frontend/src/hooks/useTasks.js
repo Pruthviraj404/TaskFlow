@@ -67,7 +67,6 @@ export const useTasks = (filter, searchQuery, userId) => {
       pending: currentTasks.filter(t => t.is_done === 0).length,
       completed,
       overdue: currentTasks.filter(t => t.due_date < today && t.is_done === 0).length,
-      // Calculates progress ring percentage for Screen 04
       rate: currentTasks.length ? Math.round((completed / currentTasks.length) * 100) : 0
     };
   }, [tasks]);
@@ -76,28 +75,36 @@ export const useTasks = (filter, searchQuery, userId) => {
     const list = Array.isArray(tasks) ? [...tasks] : [];
     const today = new Date().toISOString().split('T')[0];
     
-    // 1. First apply search query filtering
     let result = list;
     if (searchQuery) {
       result = result.filter(t => t.title?.toLowerCase().includes(searchQuery.toLowerCase()));
     }
 
-    // 2. Apply Sidebar Navigation Filters
     switch (filter) {
       case 'Today': 
-        return result.filter(t => t.due_date === today);
+        // FIX: Only show tasks due today that are NOT finished
+        return result.filter(t => t.due_date === today && t.is_done === 0);
+      
+      case 'Pending':
+        // NEW: Explicitly show only active tasks
+        return result.filter(t => t.is_done === 0);
+
       case 'Completed': 
         return result.filter(t => t.is_done === 1);
+        
       case 'Overdue': 
         return result.filter(t => t.due_date < today && t.is_done === 0);
       
-      // NEW: Quick Filter Implementation for Sidebar categories
       case 'work':
       case 'personal':
       case 'study':
-        return result.filter(t => t.category?.toLowerCase() === filter.toLowerCase());
+        // FIX: Quick filters should only show active tasks in that category
+        return result.filter(t => 
+          t.category?.toLowerCase() === filter.toLowerCase() && t.is_done === 0
+        );
         
       default: 
+        // 'All' view usually shows everything, including completed
         return result;
     }
   }, [tasks, filter, searchQuery]);
