@@ -6,6 +6,7 @@ const router = express.Router();
 const JWT_SECRET = "mysecretkey";
 
 export default function (db) {
+
   const setAuthCookie = (res, user) => {
     const token = jwt.sign(
       { id: user.id, email: user.email },
@@ -21,10 +22,10 @@ export default function (db) {
     });
   };
 
+  
   router.post("/signup", async (req, res) => {
     try {
       const { name, email, password } = req.body;
-
       if (!name || !email || !password) {
         return res.status(400).json({ error: "All fields are required" });
       }
@@ -44,21 +45,17 @@ export default function (db) {
       setAuthCookie(res, newUser);
       res.status(201).json({ user: newUser });
     } catch (error) {
-      res.status(500).json({ error: "Server error" });
+      res.status(500).json({ error: "Server error during signup" });
     }
   });
+
 
   router.post("/login", async (req, res) => {
     try {
       const { email, password } = req.body;
       const user = await db.get("SELECT * FROM users WHERE email = ?", [email]);
 
-      if (!user) {
-        return res.status(401).json({ error: "Invalid credentials" });
-      }
-
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) {
+      if (!user || !(await bcrypt.compare(password, user.password))) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
@@ -67,10 +64,11 @@ export default function (db) {
         user: { id: user.id, name: user.name, email: user.email }
       });
     } catch (error) {
-      res.status(500).json({ error: "Server error" });
+      res.status(500).json({ error: "Server error during login" });
     }
   });
 
+ 
   router.get("/me", async (req, res) => {
     try {
       const token = req.cookies.token;
@@ -80,10 +78,41 @@ export default function (db) {
       const user = await db.get("SELECT id, name, email FROM users WHERE id = ?", [decoded.id]);
 
       if (!user) return res.status(401).json({ error: "User not found" });
-
-      res.json({ user }); 
+      res.json({ user });
     } catch (error) {
       res.status(401).json({ error: "Invalid token" });
+    }
+  });
+
+
+  router.post("/change-password", async (req, res) => {
+    try {
+      const token = req.cookies.token;
+      if (!token) return res.status(401).json({ error: "Not logged in" });
+
+      const decoded = jwt.verify(token, JWT_SECRET);
+      const { currentPassword, newPassword } = req.body;
+
+  
+      const user = await db.get("SELECT * FROM users WHERE id = ?", [decoded.id]);
+      if (!user) return res.status(404).json({ error: "User not found" });
+
+    
+      const isMatch = await bcrypt.compare(currentPassword, user.password);
+      if (!isMatch) {
+        return res.status(400).json({ error: "Current password is incorrect" });
+      }
+
+     
+      const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+      // 4. DB update karo
+      await db.run("UPDATE users SET password = ? WHERE id = ?", [hashedNewPassword, decoded.id]);
+
+      res.json({ message: "Password updated successfully!" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Failed to update password" });
     }
   });
 
