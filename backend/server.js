@@ -6,7 +6,7 @@ import authRoutes from "./routes/authRoutes.js";
 import { authMiddleware } from "./middleware/auth.js";
 
 const app = express();
-const PORT = 5000;
+const PORT = 6000;
 
 app.use(
   cors({
