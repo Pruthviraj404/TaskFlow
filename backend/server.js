@@ -4,9 +4,10 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/authRoutes.js";
 import { authMiddleware } from "./middleware/auth.js";
+import upload from "./middleware/upload.js";
 
 const app = express();
-const PORT = 6000;
+const PORT = 5000;
 
 app.use(
   cors({
@@ -16,6 +17,7 @@ app.use(
 );
 app.use(cookieParser());
 app.use(express.json());
+app.use("/uploads", express.static("uploads"));
 
 let db;
 
