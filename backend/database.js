@@ -1,47 +1,49 @@
 import sqlite3 from "sqlite3";
-
 import { open } from "sqlite";
 
 export async function connectDB() {
-   const db= await open({
-    filename:"./taskflow.db",
-    driver:sqlite3.Database,
-   });
+  const db = await open({
+    filename: "./taskflow.db",
+    driver: sqlite3.Database,
+  });
 
-   await db.exec("PRAGMA foreign_keys = ON");
+  await db.exec("PRAGMA foreign_keys = ON");
 
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS users(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
 
-    await db.exec( `
+    CREATE TABLE IF NOT EXISTS tasks(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT,
+      category TEXT CHECK(category IN ('work', 'personal', 'study')),
+      priority TEXT CHECK(priority IN ('high', 'medium', 'low')),
+      due_date TEXT,
+      is_done INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+  `);
 
-        CREATE TABLE IF NOT EXISTS users(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        email TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP
-        );
+  // Safely add avatar column
+  try {
+    await db.exec(`ALTER TABLE users ADD COLUMN avatar TEXT`);
+    console.log("Avatar column added");
+  } catch (e) {}
 
-        
-    
+  // ✅ Safely add due_time column
+  try {
+    await db.exec(`ALTER TABLE tasks ADD COLUMN due_time TEXT`);
+    console.log("due_time column added");
+  } catch (e) {}
 
-        CREATE TABLE IF NOT EXISTS tasks(
-        id   INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        title   TEXT NOT NULL,
-        description TEXT,
-        category TEXT CHECK( category IN ('work', 'personal','study')),
-        priority    TEXT CHECK (priority IN ('high','medium','low')),
-        due_date    TEXT,
-        is_done     INTEGER DEFAULT 0,
-        created_at  TEXT DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-        );
-
-        `) ;
-
-        console.log("Database Ready");
-        return db;
-
-
-    
+  console.log("Database Ready");
+  return db;
 }

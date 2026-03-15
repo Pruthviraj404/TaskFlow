@@ -4,14 +4,13 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/authRoutes.js";
 import { authMiddleware } from "./middleware/auth.js";
-import upload from "./middleware/upload.js";
 
 const app = express();
 const PORT = 5000;
 
 app.use(
   cors({
-    origin: "http://localhost:5173", 
+    origin: "http://localhost:5173",
     credentials: true,
   })
 );
@@ -21,15 +20,11 @@ app.use("/uploads", express.static("uploads"));
 
 let db;
 
-
 (async () => {
   try {
     db = await connectDB();
     console.log("Database Connected!");
-
-  
     app.use("/api/auth", authRoutes(db));
-
     app.listen(PORT, () => {
       console.log(`Server running on PORT ${PORT}`);
     });
@@ -42,8 +37,7 @@ app.get("/", (req, res) => {
   res.send("Task Flow is Running!");
 });
 
-
-
+// ✅ GET tasks
 app.get("/api/tasks", authMiddleware, async (req, res) => {
   try {
     const user_id = req.user.id;
@@ -67,25 +61,67 @@ app.get("/api/tasks", authMiddleware, async (req, res) => {
 app.post("/api/tasks", authMiddleware, async (req, res) => {
   try {
     const user_id = req.user.id;
-    const { title, description, category, priority, due_date } = req.body;
+    const { title, description, category, priority, due_date, due_time } = req.body;
+
+    if (!title) {
+      return res.status(400).json({ error: "Title is required" });
+    }
 
     const result = await db.run(
-      `INSERT INTO tasks (user_id,title,description,category,priority,due_date) VALUES(?,?,?,?,?,?)`,
-      [user_id, title, description, category, priority, due_date]
+      `INSERT INTO tasks (user_id, title, description, category, priority, due_date, due_time) 
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [user_id, title, description || null, category, priority, due_date, due_time || null]
     );
 
-    res.status(201).json({ id: result.lastID, title, description, category, priority, due_date, is_done: 0 });
+    res.status(201).json({
+      id: result.lastID,
+      user_id,
+      title,
+      description: description || null,
+      category,
+      priority,
+      due_date,
+      due_time: due_time || null,
+      is_done: 0
+    });
   } catch (error) {
+    console.error("POST /api/tasks error:", error);
     res.status(500).json({ error: "Something went wrong" });
   }
 });
 
+// ✅ PUT task — includes due_time
+app.put("/api/tasks/:id", authMiddleware, async (req, res) => {
+  try {
+    const user_id = req.user.id;
+    const id = req.params.id;
+    const { title, description, category, priority, due_date, due_time } = req.body;
+
+    const result = await db.run(
+      `UPDATE tasks SET title=?, description=?, category=?, priority=?, due_date=?, due_time=? WHERE id=? AND user_id=?`,
+      [title, description, category, priority, due_date, due_time, id, user_id]
+    );
+
+    if (result.changes === 0) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    res.json({ id: Number(id), title, description, category, priority, due_date, due_time });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+// ✅ DELETE task
 app.delete("/api/tasks/:id", authMiddleware, async (req, res) => {
   try {
     const user_id = req.user.id;
     const id = req.params.id;
-    const result = await db.run("DELETE FROM tasks WHERE id = ? AND user_id = ?", [id, user_id]);
-
+    const result = await db.run(
+      "DELETE FROM tasks WHERE id = ? AND user_id = ?",
+      [id, user_id]
+    );
     if (result.changes === 0) return res.status(404).json({ message: "Task Not Found" });
     res.json({ message: "Task deleted successfully" });
   } catch (error) {
@@ -93,12 +129,15 @@ app.delete("/api/tasks/:id", authMiddleware, async (req, res) => {
   }
 });
 
+// ✅ PATCH toggle done
 app.patch("/api/tasks/:id/done", authMiddleware, async (req, res) => {
   try {
     const user_id = req.user.id;
     const id = req.params.id;
-    const result = await db.run("UPDATE tasks SET is_done = NOT is_done WHERE id = ? AND user_id = ?", [id, user_id]);
-
+    const result = await db.run(
+      "UPDATE tasks SET is_done = NOT is_done WHERE id = ? AND user_id = ?",
+      [id, user_id]
+    );
     if (result.changes === 0) return res.status(404).json({ message: "Task Not Found!" });
     res.json({ message: "Task Status Toggled Successfully" });
   } catch (error) {

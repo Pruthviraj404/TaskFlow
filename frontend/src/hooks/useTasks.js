@@ -9,7 +9,6 @@ export const useTasks = (filter, searchQuery, userId) => {
       setTasks([]);
       return;
     }
-
     const loadData = async () => {
       try {
         const data = await TaskService.getTasks();
@@ -23,14 +22,13 @@ export const useTasks = (filter, searchQuery, userId) => {
         setTasks([]);
       }
     };
-
     loadData();
   }, [userId]);
 
   const handleToggle = async (id) => {
     try {
       await TaskService.ToggleTaskStatus(id);
-      setTasks(prev => prev.map(t => 
+      setTasks(prev => prev.map(t =>
         t.id === id ? { ...t, is_done: t.is_done === 1 ? 0 : 1 } : t
       ));
     } catch (err) {
@@ -57,57 +55,79 @@ export const useTasks = (filter, searchQuery, userId) => {
     }
   };
 
+  const handleEdit = async (id, updatedData) => {
+    try {
+      const updatedTask = await TaskService.updateTask(id, updatedData);
+      setTasks(prev =>
+        prev.map(t => t.id === id ? { ...t, ...updatedTask } : t)
+      );
+    } catch (err) {
+      console.error("Edit failed:", err);
+    }
+  };
+
   const stats = useMemo(() => {
     const currentTasks = Array.isArray(tasks) ? tasks : [];
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA'); // ✅ local date
     const completed = currentTasks.filter(t => t.is_done === 1).length;
-    
+
     return {
       total: currentTasks.length,
       pending: currentTasks.filter(t => t.is_done === 0).length,
       completed,
-      overdue: currentTasks.filter(t => t.due_date < today && t.is_done === 0).length,
+      overdue: currentTasks.filter(t => {
+        if (!t.due_date || t.is_done === 1) return false;
+        const due = t.due_date.split('T')[0];
+        return due < today;
+      }).length,
       rate: currentTasks.length ? Math.round((completed / currentTasks.length) * 100) : 0
     };
   }, [tasks]);
 
   const filteredTasks = useMemo(() => {
     const list = Array.isArray(tasks) ? [...tasks] : [];
-    const today = new Date().toISOString().split('T')[0];
-    
+    const today = new Date().toLocaleDateString('en-CA'); // ✅ local date
     let result = list;
+
     if (searchQuery) {
-      result = result.filter(t => t.title?.toLowerCase().includes(searchQuery.toLowerCase()));
+      result = result.filter(t =>
+        t.title?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
     }
 
     switch (filter) {
-      case 'Today': 
-        // FIX: Only show tasks due today that are NOT finished
-        return result.filter(t => t.due_date === today && t.is_done === 0);
-      
+
+      case 'Today':
+        return result.filter(t => {
+          if (!t.due_date || t.is_done === 1) return false;
+          const due = t.due_date.split('T')[0];
+          return due === today;
+        });
+
       case 'Pending':
-        // NEW: Explicitly show only active tasks
         return result.filter(t => t.is_done === 0);
 
-      case 'Completed': 
+      case 'Completed':
         return result.filter(t => t.is_done === 1);
-        
-      case 'Overdue': 
-        return result.filter(t => t.due_date < today && t.is_done === 0);
-      
+
+      case 'Overdue':
+        return result.filter(t => {
+          if (!t.due_date || t.is_done === 1) return false;
+          const due = t.due_date.split('T')[0];
+          return due < today;
+        });
+
       case 'work':
       case 'personal':
       case 'study':
-        // FIX: Quick filters should only show active tasks in that category
-        return result.filter(t => 
+        return result.filter(t =>
           t.category?.toLowerCase() === filter.toLowerCase() && t.is_done === 0
         );
-        
-      default: 
-        // 'All' view usually shows everything, including completed
+
+      default:
         return result;
     }
   }, [tasks, filter, searchQuery]);
 
-  return { tasks, filteredTasks, stats, handleToggle, handleDelete, handleAdd };
+  return { tasks, filteredTasks, stats, handleToggle, handleDelete, handleAdd, handleEdit };
 };

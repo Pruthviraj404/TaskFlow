@@ -25,6 +25,15 @@ export const changePassword = async (passwordData) => {
   return res.json();
 };
 
+export const updateTask = async (id, taskData) => {
+  const res = await fetch(`${TASKS_URL}/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(taskData),
+  });
+  return res.json();
+};
 
 export const getTasks = async () => {
   const res = await fetch(TASKS_URL, {

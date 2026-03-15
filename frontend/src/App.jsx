@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from "react";
-import Sidebar from "./layout/Sidebar"; 
+import Sidebar from "./layout/Sidebar";
 import Dashboard from "./pages/Dashboard";
 import TaskPage from "./pages/TaskPage";
-import Overview from "./pages/Overview"; 
+import Overview from "./pages/Overview";
 import Settings from "./pages/Settings";
 import { useTasks } from "./hooks/useTasks";
 import AddTaskModal from "./components/tasks/AddTaskModal";
 import AuthPage from "./pages/auth/AuthPage";
 
 export default function App() {
+  // --- State ---
   const [activeScreen, setActiveScreen] = useState("dashboard");
   const [filter, setFilter] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
@@ -16,16 +17,24 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 1. Authentication Lifecycle
+  // Dark mode state with localStorage persistence
+  const [darkMode, setDarkMode] = useState(
+    () => localStorage.getItem("darkMode") === "true"
+  );
+
+  // Save darkMode to localStorage whenever it changes
   useEffect(() => {
-    fetch("http://localhost:5000/api/auth/me", {
-      credentials: "include"
-    })
-      .then(res => {
+    localStorage.setItem("darkMode", darkMode);
+  }, [darkMode]);
+
+  // --- Authentication Lifecycle ---
+  useEffect(() => {
+    fetch("http://localhost:5000/api/auth/me", { credentials: "include" })
+      .then((res) => {
         if (!res.ok) throw new Error("Session expired");
         return res.json();
       })
-      .then(data => {
+      .then((data) => {
         const userData = data.user || (data.id ? data : null);
         setUser(userData);
       })
@@ -47,35 +56,58 @@ export default function App() {
     }
   };
 
-  // 2. Task Logic Hook
+  // --- Task Logic Hook ---
   const userId = user?.id;
-  const { tasks, filteredTasks, stats, handleToggle, handleDelete, handleAdd } =
-    useTasks(filter, searchQuery, userId);
+  const {
+    tasks,
+    filteredTasks,
+    stats,
+    handleToggle,
+    handleDelete,
+    handleAdd,
+    handleEdit, // Added
+  } = useTasks(filter, searchQuery, userId);
 
-  // 3. Conditional Rendering Guards
+  // --- Loading Screen ---
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-[#F9FAFB]">
-        <div className="text-gray-500 font-medium animate-pulse text-lg">
+      <div
+        className={`flex items-center justify-center h-screen ${
+          darkMode ? "bg-gray-900" : "bg-[#F9FAFB]"
+        }`}
+      >
+        <div
+          className={`text-lg font-medium animate-pulse ${
+            darkMode ? "text-white" : "text-gray-500"
+          }`}
+        >
           Loading TaskFlow...
         </div>
       </div>
     );
   }
 
+  // --- Auth Guard ---
   if (!user) {
     return (
-      <AuthPage 
+      <AuthPage
         onLogin={(data) => {
           setUser(data.user || data);
           setActiveScreen("dashboard");
-        }} 
+        }}
+        darkMode={darkMode} // optional: for styling in AuthPage
       />
     );
   }
 
+  // --- Main Render ---
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-[#F9FAFB]">
+    <div
+      className={`flex h-screen w-full overflow-hidden ${
+        darkMode ? "bg-gray-900 text-white" : "bg-[#F9FAFB] text-gray-900"
+      }`}
+    >
+      {/* Sidebar */}
       <Sidebar
         user={user}
         onLogout={handleLogout}
@@ -85,35 +117,37 @@ export default function App() {
         setActiveScreen={setActiveScreen}
         filter={filter}
         setFilter={setFilter}
+        darkMode={darkMode}
+        setDarkMode={setDarkMode} // toggle switch
       />
-      
-      <main className="flex-1 overflow-y-auto relative bg-[#F9FAFB]">
-        {/* Screen 04: Overview Dashboard */}
+
+      {/* Main Content */}
+      <main
+        className={`flex-1 overflow-y-auto relative ${
+          darkMode ? "bg-gray-900 text-white" : "bg-[#F9FAFB] text-gray-900"
+        }`}
+      >
         {activeScreen === "dashboard" ? (
-          <Dashboard 
-            stats={stats} 
-            tasks={tasks} 
-            onToggle={handleToggle} 
-            setShowModal={setShowModal} 
+          <Dashboard
+            stats={stats}
+            tasks={tasks}
+            onToggle={handleToggle}
+            setShowModal={setShowModal}
+            user={user}
+            darkMode={darkMode}
           />
-        ) 
-        /* Figure 3: Categories Expandable View */
-        : activeScreen === "overview" ? (
-          <Overview 
-            tasks={tasks} 
-            onToggle={handleToggle} 
+        ) : activeScreen === "overview" ? (
+          <Overview tasks={tasks} onToggle={handleToggle} darkMode={darkMode} />
+        ) : activeScreen === "settings" ? (
+          <Settings
+            user={user}
+            onLogout={handleLogout}
+            setActiveScreen={setActiveScreen}
+            darkMode={darkMode}
+            setDarkMode={setDarkMode} // toggle from settings
+            onUpdateUser={(updatedUser) => setUser(updatedUser)}
           />
-        ) 
-        /* Screen 05: Profile & Settings */
-        : activeScreen === "settings" ? (
-          <Settings 
-            user={user} 
-            onLogout={handleLogout} 
-            setActiveScreen={setActiveScreen} 
-          />
-        ) 
-        /* Task List View (All, Today, Completed, Category Filters) */
-        : (
+        ) : (
           <TaskPage
             tasks={filteredTasks}
             searchQuery={searchQuery}
@@ -123,14 +157,18 @@ export default function App() {
             setShowModal={setShowModal}
             onToggle={handleToggle}
             onDelete={handleDelete}
+            onEdit={handleEdit} // passed to TaskPage
+            darkMode={darkMode}
           />
         )}
       </main>
 
+      {/* Add Task Modal */}
       {showModal && (
-        <AddTaskModal 
-          onClose={() => setShowModal(false)} 
-          onSave={handleAdd} 
+        <AddTaskModal
+          onClose={() => setShowModal(false)}
+          onSave={handleAdd}
+          darkMode={darkMode}
         />
       )}
     </div>
