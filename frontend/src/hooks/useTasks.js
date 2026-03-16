@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import * as TaskService from '../services/TaskService';
 
-export const useTasks = (filter, searchQuery, userId) => {
+export const useTasks = (filter, searchQuery, userId, categoryFilter) => {
   const [tasks, setTasks] = useState([]);
 
   useEffect(() => {
@@ -89,16 +89,24 @@ export const useTasks = (filter, searchQuery, userId) => {
     const today = new Date().toLocaleDateString('en-CA');
     let result = list;
 
+   
+    if (categoryFilter) {
+      result = result.filter(t =>
+        t.category?.toLowerCase() === categoryFilter.toLowerCase()
+      );
+    }
+
+  
     if (searchQuery) {
       result = result.filter(t =>
         t.title?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
+    
     switch (filter) {
 
       case 'Today':
-        // ✅ show ALL tasks due today — both pending and completed
         return result.filter(t => {
           if (!t.due_date) return false;
           const due = t.due_date.split('T')[0];
@@ -122,13 +130,13 @@ export const useTasks = (filter, searchQuery, userId) => {
       case 'personal':
       case 'study':
         return result.filter(t =>
-          t.category?.toLowerCase() === filter.toLowerCase() && t.is_done === 0
+          t.category?.toLowerCase() === filter.toLowerCase()
         );
 
       default:
         return result;
     }
-  }, [tasks, filter, searchQuery]);
+  }, [tasks, filter, searchQuery, categoryFilter]); 
 
   return { tasks, filteredTasks, stats, handleToggle, handleDelete, handleAdd, handleEdit };
 };

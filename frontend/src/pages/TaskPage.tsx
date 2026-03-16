@@ -23,6 +23,7 @@ interface TaskPageProps {
   onDelete: (id: number) => void;
   onEdit: (id: number, data: any) => Promise<void>;
   darkMode: boolean;
+  categoryFilter?: string | null;
 }
 
 export default function TaskPage({
@@ -36,16 +37,30 @@ export default function TaskPage({
   onDelete,
   onEdit,
   darkMode,
+  categoryFilter,
 }: TaskPageProps) {
+
+ 
+  const pageTitle = categoryFilter
+    ? `${categoryFilter.charAt(0).toUpperCase() + categoryFilter.slice(1)} Tasks`
+    : filter === 'All' ? 'All Tasks' : `${filter} Tasks`;
 
   return (
     <div className="p-8 max-w-5xl mx-auto animate-in fade-in duration-500">
 
-      {/* HEADER & SEARCH */}
+     
       <div className="flex items-center justify-between mb-8">
-        <h2 className={`text-2xl font-extrabold ${darkMode ? 'text-white' : 'text-[#111827]'}`}>
-          {filter === 'All' ? 'All Tasks' : `${filter} Tasks`}
-        </h2>
+        <div>
+          <h2 className={`text-2xl font-extrabold ${darkMode ? 'text-white' : 'text-[#111827]'}`}>
+            {pageTitle}
+          </h2>
+          
+          {categoryFilter && (
+            <p className="text-xs text-gray-400 mt-1 font-medium">
+              Filtered by category · Tab filters apply within
+            </p>
+          )}
+        </div>
         <div className="flex items-center gap-3">
           <div className="relative group">
             <Search
@@ -73,7 +88,7 @@ export default function TaskPage({
         </div>
       </div>
 
-      {/* FILTER TABS */}
+     
       <div className={`flex items-center gap-6 mb-6 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
         {['All', 'Today', 'Pending', 'Completed', 'Overdue'].map((f) => (
           <button
@@ -93,7 +108,7 @@ export default function TaskPage({
         ))}
       </div>
 
-      {/* TASK LIST */}
+    
       {tasks.length > 0 ? (
         <TaskList
           tasks={tasks}
@@ -114,7 +129,12 @@ export default function TaskPage({
           <h3 className={`font-bold mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-800'}`}>
             No tasks found
           </h3>
-          <p className="text-gray-400 text-sm">Try changing filters or add a new task.</p>
+          <p className="text-gray-400 text-sm">
+            {categoryFilter
+              ? `No ${filter === 'All' ? '' : filter.toLowerCase() + ' '}${categoryFilter} tasks found.`
+              : 'Try changing filters or add a new task.'
+            }
+          </p>
         </div>
       )}
     </div>

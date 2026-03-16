@@ -25,7 +25,6 @@ const SidebarItem = ({ icon: Icon, label, count, active, onClick, color }) => (
       <Icon size={18} className={active ? 'text-white' : color || 'text-inherit'} />
       {label}
     </div>
-
     {count !== undefined && (
       <span className={`font-mono text-[10px] px-2 py-0.5 rounded-md ${
         active ? 'bg-white/20 text-white' : 'bg-white/5 text-gray-500'
@@ -43,8 +42,12 @@ export default function Sidebar({
   setActiveScreen,
   filter,
   setFilter,
+  categoryFilter,
+  setCategoryFilter,
   user,
-  onLogout
+  onLogout,
+  darkMode,
+  setDarkMode
 }) {
 
   const getInitials = (name) => {
@@ -54,9 +57,18 @@ export default function Sidebar({
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   };
 
+  // ✅ Category click — sets categoryFilter + resets tab to All
   const handleCategoryClick = (catName) => {
-    setActiveScreen("list");
-    setFilter(catName);
+    setCategoryFilter(catName);
+    setFilter("All");
+    setActiveScreen("tasks");
+  };
+
+  // ✅ Regular nav click — clears categoryFilter
+  const handleNavClick = (screen, filterVal = "All") => {
+    setCategoryFilter(null);
+    setFilter(filterVal);
+    setActiveScreen(screen);
   };
 
   return (
@@ -67,12 +79,11 @@ export default function Sidebar({
         {/* Logo */}
         <div
           className="flex items-center gap-3 mb-10 cursor-pointer group"
-          onClick={() => setActiveScreen("dashboard")}
+          onClick={() => handleNavClick("dashboard")}
         >
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
             <Layout size={18} className="text-white" />
           </div>
-
           <h1 className="text-xl font-black text-white tracking-tight">
             TaskFlow
           </h1>
@@ -80,7 +91,6 @@ export default function Sidebar({
 
         {/* Main Menu */}
         <div className="mb-8">
-
           <p className="text-[10px] font-bold text-gray-600 mb-4 px-3 uppercase tracking-[0.2em]">
             Main Menu
           </p>
@@ -91,46 +101,37 @@ export default function Sidebar({
               icon={LayoutDashboard}
               label="Dashboard"
               active={activeScreen === "dashboard"}
-              onClick={() => setActiveScreen("dashboard")}
+              onClick={() => handleNavClick("dashboard")}
             />
 
             <SidebarItem
               icon={Layout}
               label="All Tasks"
               count={tasks.length}
-              active={activeScreen === "list" && filter === "All"}
-              onClick={() => {
-                setActiveScreen("list");
-                setFilter("All");
-              }}
+              active={activeScreen === "tasks" && !categoryFilter && filter === "All"}
+              onClick={() => handleNavClick("tasks", "All")}
             />
 
             <SidebarItem
               icon={Clock}
               label="Today"
               count={stats.pending}
-              active={activeScreen === "list" && filter === "Today"}
-              onClick={() => {
-                setActiveScreen("list");
-                setFilter("Today");
-              }}
+              active={activeScreen === "tasks" && !categoryFilter && filter === "Today"}
+              onClick={() => handleNavClick("tasks", "Today")}
             />
 
             <SidebarItem
               icon={Layers}
               label="Categories View"
               active={activeScreen === "overview"}
-              onClick={() => setActiveScreen("overview")}
+              onClick={() => handleNavClick("overview")}
             />
 
             <SidebarItem
               icon={CheckCircle2}
               label="Completed"
-              active={activeScreen === "list" && filter === "Completed"}
-              onClick={() => {
-                setActiveScreen("list");
-                setFilter("Completed");
-              }}
+              active={activeScreen === "tasks" && !categoryFilter && filter === "Completed"}
+              onClick={() => handleNavClick("tasks", "Completed")}
             />
 
           </nav>
@@ -138,7 +139,6 @@ export default function Sidebar({
 
         {/* Quick Filters */}
         <div>
-
           <p className="text-[10px] font-bold text-gray-600 mb-4 px-3 uppercase tracking-[0.2em]">
             Quick Filters
           </p>
@@ -149,7 +149,7 @@ export default function Sidebar({
               icon={Briefcase}
               label="Work"
               color="text-blue-400"
-              active={activeScreen === "list" && filter === "work"}
+              active={activeScreen === "tasks" && categoryFilter === "work"}
               onClick={() => handleCategoryClick("work")}
             />
 
@@ -157,7 +157,7 @@ export default function Sidebar({
               icon={User}
               label="Personal"
               color="text-purple-400"
-              active={activeScreen === "list" && filter === "personal"}
+              active={activeScreen === "tasks" && categoryFilter === "personal"}
               onClick={() => handleCategoryClick("personal")}
             />
 
@@ -165,7 +165,7 @@ export default function Sidebar({
               icon={BookOpen}
               label="Study"
               color="text-emerald-400"
-              active={activeScreen === "list" && filter === "study"}
+              active={activeScreen === "tasks" && categoryFilter === "study"}
               onClick={() => handleCategoryClick("study")}
             />
 
@@ -181,40 +181,31 @@ export default function Sidebar({
           className="flex items-center gap-3 w-full p-2 group cursor-pointer hover:bg-white/5 rounded-xl transition-colors"
           onClick={() => setActiveScreen("settings")}
         >
-
-          {/* Avatar */}
           <div className="w-10 h-10 shrink-0 rounded-xl overflow-hidden bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center font-bold text-sm shadow-lg shadow-blue-500/20 text-white">
-
             {user?.avatar ? (
               <img
-                src={`http://localhost:5000${user.avatar}`}
+                src={user.avatar}
                 alt="profile"
                 className="w-full h-full object-cover"
               />
             ) : (
               getInitials(user?.name)
             )}
-
           </div>
 
-          {/* User Info */}
           <div className="text-left overflow-hidden flex-1">
-
             <p className="text-sm font-bold truncate text-gray-100 group-hover:text-blue-400 transition-colors">
               {user?.name || "Guest User"}
             </p>
-
             <p className="text-[10px] text-gray-500 truncate">
               {user?.email || "Sign in to sync"}
             </p>
-
           </div>
 
           <Settings
             size={16}
             className="text-gray-500 group-hover:text-white transition-all group-hover:rotate-90"
           />
-
         </div>
 
         {/* Logout */}
@@ -227,7 +218,6 @@ export default function Sidebar({
         </button>
 
       </div>
-
     </aside>
   );
 }

@@ -1,12 +1,16 @@
+
+import dotenv from "dotenv";
+dotenv.config();
 import express from "express";
 import { connectDB } from "./database.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/authRoutes.js";
 import { authMiddleware } from "./middleware/auth.js";
+import { startReminderScheduler } from "./utils/reminderScheduler.js";
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 app.use(
   cors({
@@ -25,6 +29,10 @@ let db;
     db = await connectDB();
     console.log("Database Connected!");
     app.use("/api/auth", authRoutes(db));
+
+    
+    startReminderScheduler(db);
+
     app.listen(PORT, () => {
       console.log(`Server running on PORT ${PORT}`);
     });
@@ -57,6 +65,7 @@ app.get("/api/tasks", authMiddleware, async (req, res) => {
     res.status(500).json({ error: "Something went wrong" });
   }
 });
+
 
 app.post("/api/tasks", authMiddleware, async (req, res) => {
   try {

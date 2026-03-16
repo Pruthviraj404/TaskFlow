@@ -9,6 +9,7 @@ export async function connectDB() {
 
   await db.exec("PRAGMA foreign_keys = ON");
 
+ 
   await db.exec(`
     CREATE TABLE IF NOT EXISTS users(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -32,7 +33,19 @@ export async function connectDB() {
     );
   `);
 
- 
+
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS otp_verification(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT NOT NULL,
+      otp TEXT NOT NULL,
+      expires_at INTEGER NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+  console.log("OTP table ready");
+
+  
   try {
     await db.exec(`ALTER TABLE users ADD COLUMN avatar TEXT`);
     console.log("Avatar column added");
