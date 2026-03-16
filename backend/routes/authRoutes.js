@@ -214,7 +214,7 @@ export default function (db) {
      
       const hashedNewPassword = await bcrypt.hash(newPassword, 10);
 
-      // 4. DB update karo
+    
       await db.run("UPDATE users SET password = ? WHERE id = ?", [hashedNewPassword, decoded.id]);
 
       res.json({ message: "Password updated successfully!" });

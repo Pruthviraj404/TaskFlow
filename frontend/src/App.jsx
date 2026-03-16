@@ -9,7 +9,7 @@ import AddTaskModal from "./components/tasks/AddTaskModal";
 import AuthPage from "./pages/auth/AuthPage";
 
 export default function App() {
-  // --- State ---
+
   const [activeScreen, setActiveScreen] = useState("dashboard");
   const [filter, setFilter] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
@@ -17,17 +17,17 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Dark mode state with localStorage persistence
+ 
   const [darkMode, setDarkMode] = useState(
     () => localStorage.getItem("darkMode") === "true"
   );
 
-  // Save darkMode to localStorage whenever it changes
+  
   useEffect(() => {
     localStorage.setItem("darkMode", darkMode);
   }, [darkMode]);
 
-  // --- Authentication Lifecycle ---
+
   useEffect(() => {
     fetch("http://localhost:5000/api/auth/me", { credentials: "include" })
       .then((res) => {
@@ -56,7 +56,7 @@ export default function App() {
     }
   };
 
-  // --- Task Logic Hook ---
+
   const userId = user?.id;
   const {
     tasks,
@@ -65,10 +65,10 @@ export default function App() {
     handleToggle,
     handleDelete,
     handleAdd,
-    handleEdit, // Added
+    handleEdit, 
   } = useTasks(filter, searchQuery, userId);
 
-  // --- Loading Screen ---
+ 
   if (loading) {
     return (
       <div
@@ -87,7 +87,7 @@ export default function App() {
     );
   }
 
-  // --- Auth Guard ---
+ 
   if (!user) {
     return (
       <AuthPage
@@ -95,19 +95,19 @@ export default function App() {
           setUser(data.user || data);
           setActiveScreen("dashboard");
         }}
-        darkMode={darkMode} // optional: for styling in AuthPage
+        darkMode={darkMode} 
       />
     );
   }
 
-  // --- Main Render ---
+  
   return (
     <div
       className={`flex h-screen w-full overflow-hidden ${
         darkMode ? "bg-gray-900 text-white" : "bg-[#F9FAFB] text-gray-900"
       }`}
     >
-      {/* Sidebar */}
+   
       <Sidebar
         user={user}
         onLogout={handleLogout}
@@ -118,10 +118,10 @@ export default function App() {
         filter={filter}
         setFilter={setFilter}
         darkMode={darkMode}
-        setDarkMode={setDarkMode} // toggle switch
+        setDarkMode={setDarkMode} 
       />
 
-      {/* Main Content */}
+   
       <main
         className={`flex-1 overflow-y-auto relative ${
           darkMode ? "bg-gray-900 text-white" : "bg-[#F9FAFB] text-gray-900"
@@ -144,7 +144,7 @@ export default function App() {
             onLogout={handleLogout}
             setActiveScreen={setActiveScreen}
             darkMode={darkMode}
-            setDarkMode={setDarkMode} // toggle from settings
+            setDarkMode={setDarkMode} 
             onUpdateUser={(updatedUser) => setUser(updatedUser)}
           />
         ) : (
@@ -157,13 +157,13 @@ export default function App() {
             setShowModal={setShowModal}
             onToggle={handleToggle}
             onDelete={handleDelete}
-            onEdit={handleEdit} // passed to TaskPage
+            onEdit={handleEdit} 
             darkMode={darkMode}
           />
         )}
       </main>
 
-      {/* Add Task Modal */}
+     
       {showModal && (
         <AddTaskModal
           onClose={() => setShowModal(false)}

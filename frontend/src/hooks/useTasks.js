@@ -68,7 +68,7 @@ export const useTasks = (filter, searchQuery, userId) => {
 
   const stats = useMemo(() => {
     const currentTasks = Array.isArray(tasks) ? tasks : [];
-    const today = new Date().toLocaleDateString('en-CA'); // ✅ local date
+    const today = new Date().toLocaleDateString('en-CA');
     const completed = currentTasks.filter(t => t.is_done === 1).length;
 
     return {
@@ -86,7 +86,7 @@ export const useTasks = (filter, searchQuery, userId) => {
 
   const filteredTasks = useMemo(() => {
     const list = Array.isArray(tasks) ? [...tasks] : [];
-    const today = new Date().toLocaleDateString('en-CA'); // ✅ local date
+    const today = new Date().toLocaleDateString('en-CA');
     let result = list;
 
     if (searchQuery) {
@@ -98,8 +98,9 @@ export const useTasks = (filter, searchQuery, userId) => {
     switch (filter) {
 
       case 'Today':
+        // ✅ show ALL tasks due today — both pending and completed
         return result.filter(t => {
-          if (!t.due_date || t.is_done === 1) return false;
+          if (!t.due_date) return false;
           const due = t.due_date.split('T')[0];
           return due === today;
         });

@@ -32,13 +32,13 @@ export async function connectDB() {
     );
   `);
 
-  // Safely add avatar column
+ 
   try {
     await db.exec(`ALTER TABLE users ADD COLUMN avatar TEXT`);
     console.log("Avatar column added");
   } catch (e) {}
 
-  // ✅ Safely add due_time column
+
   try {
     await db.exec(`ALTER TABLE tasks ADD COLUMN due_time TEXT`);
     console.log("due_time column added");

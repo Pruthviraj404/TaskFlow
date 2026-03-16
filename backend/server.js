@@ -37,7 +37,7 @@ app.get("/", (req, res) => {
   res.send("Task Flow is Running!");
 });
 
-// ✅ GET tasks
+
 app.get("/api/tasks", authMiddleware, async (req, res) => {
   try {
     const user_id = req.user.id;
@@ -90,7 +90,7 @@ app.post("/api/tasks", authMiddleware, async (req, res) => {
   }
 });
 
-// ✅ PUT task — includes due_time
+
 app.put("/api/tasks/:id", authMiddleware, async (req, res) => {
   try {
     const user_id = req.user.id;
@@ -113,7 +113,7 @@ app.put("/api/tasks/:id", authMiddleware, async (req, res) => {
   }
 });
 
-// ✅ DELETE task
+
 app.delete("/api/tasks/:id", authMiddleware, async (req, res) => {
   try {
     const user_id = req.user.id;
@@ -129,7 +129,7 @@ app.delete("/api/tasks/:id", authMiddleware, async (req, res) => {
   }
 });
 
-// ✅ PATCH toggle done
+
 app.patch("/api/tasks/:id/done", authMiddleware, async (req, res) => {
   try {
     const user_id = req.user.id;

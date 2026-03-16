@@ -4,8 +4,8 @@ import { X } from 'lucide-react';
 export default function AddTaskModal({ onClose, onSave, darkMode }) {
 
   const now = new Date();
-  const todayLocal = now.toLocaleDateString('en-CA'); // "2026-03-16"
-  const currentTime = now.toTimeString().slice(0, 5);  // "12:47"
+  const todayLocal = now.toLocaleDateString('en-CA');
+  const currentTime = now.toTimeString().slice(0, 5);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -13,7 +13,7 @@ export default function AddTaskModal({ onClose, onSave, darkMode }) {
     category: 'work',
     priority: 'medium',
     due_date: todayLocal,
-    due_time: currentTime,  // ✅ new field
+    due_time: '', 
   });
 
   const handleSubmit = (e) => {
@@ -22,8 +22,6 @@ export default function AddTaskModal({ onClose, onSave, darkMode }) {
     onClose();
   };
 
-  // ✅ when date changes to today, reset min time to now
-  // when date is future, allow any time
   const isToday = formData.due_date === todayLocal;
 
   return (
@@ -32,7 +30,7 @@ export default function AddTaskModal({ onClose, onSave, darkMode }) {
         darkMode ? 'bg-gray-900' : 'bg-white'
       }`}>
 
-        {/* Header */}
+  
         <div className={`p-6 border-b flex items-center justify-between ${
           darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50/50 border-gray-100'
         }`}>
@@ -53,7 +51,6 @@ export default function AddTaskModal({ onClose, onSave, darkMode }) {
 
         <form onSubmit={handleSubmit} className="p-8 space-y-6">
 
-          {/* Title */}
           <div className="space-y-1">
             <label className={`text-sm font-bold ml-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
               Task Title <span className="text-red-500">*</span>
@@ -71,7 +68,7 @@ export default function AddTaskModal({ onClose, onSave, darkMode }) {
             />
           </div>
 
-          {/* Description */}
+    
           <div className="space-y-1">
             <label className={`text-sm font-bold ml-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
               Description
@@ -88,7 +85,7 @@ export default function AddTaskModal({ onClose, onSave, darkMode }) {
             />
           </div>
 
-          {/* Category & Date Grid */}
+         
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className={`text-sm font-bold ml-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -127,25 +124,40 @@ export default function AddTaskModal({ onClose, onSave, darkMode }) {
             </div>
           </div>
 
-          {/* ✅ Due Time */}
+       
           <div className="space-y-1">
-            <label className={`text-sm font-bold ml-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              Due Time
-            </label>
+            <div className="flex items-center justify-between ml-1">
+              <label className={`text-sm font-bold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                Due Time
+              </label>
+           
+              {formData.due_time ? (
+                <button
+                  type="button"
+                  onClick={() => setFormData({...formData, due_time: ''})}
+                  className="text-xs text-red-400 hover:text-red-600 font-bold"
+                >
+                  Clear time
+                </button>
+              ) : (
+                <span className="text-xs text-gray-400">Optional</span>
+              )}
+            </div>
             <input
               type="time"
               value={formData.due_time}
-              min={isToday ? currentTime : undefined} // ✅ block past times only for today
+              min={isToday && formData.due_time ? currentTime : undefined}
+              placeholder="--:--"
               className={`w-full p-4 border-2 rounded-2xl outline-none focus:border-blue-500 transition-all text-sm cursor-pointer ${
                 darkMode
                   ? 'bg-gray-800 border-gray-700 text-white'
                   : 'bg-gray-50 border-gray-100 text-black focus:bg-white'
-              }`}
+              } ${!formData.due_time ? 'text-gray-400' : ''}`}
               onChange={e => setFormData({...formData, due_time: e.target.value})}
             />
           </div>
 
-          {/* Priority Selector */}
+       
           <div className="space-y-2">
             <label className={`text-sm font-bold ml-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
               Priority
@@ -177,7 +189,6 @@ export default function AddTaskModal({ onClose, onSave, darkMode }) {
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="flex gap-3 pt-2">
             <button
               type="button"
