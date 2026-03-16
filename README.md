@@ -325,15 +325,6 @@ All protected by `authMiddleware`.
 
 ---
 
-## 🐛 Known Issues & Notes
-
-- Server must be running for reminders to fire — missed if server is offline at due time
-- SQLite `DATE('now')` uses UTC — frontend uses `toLocaleDateString('en-CA')` for IST compatibility
-- Avatar images stored in `/backend/uploads/` — add to `.gitignore`
-- No pagination — all tasks loaded in one query
-
----
-
 ## 📦 Dependencies
 
 ### Frontend
@@ -376,15 +367,3 @@ dist
 
 ---
 
-## 🚀 Production Checklist
-
-- [ ] Move all secrets to `.env` (JWT_SECRET, GMAIL credentials)
-- [ ] Set `secure: true` on cookie (requires HTTPS)
-- [ ] Set `sameSite: "strict"` on cookie
-- [ ] Replace SQLite with PostgreSQL or MySQL
-- [ ] Add input validation (express-validator)
-- [ ] Add rate limiting on auth routes (express-rate-limit)
-- [ ] Store avatars in cloud storage (S3, Cloudinary)
-- [ ] Use a job queue for reminders (Bull, BullMQ) instead of setInterval
-- [ ] Add refresh token logic
-- [ ] Add React error boundary
