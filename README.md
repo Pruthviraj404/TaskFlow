@@ -1,6 +1,6 @@
 # TaskFlow 🗂️
 
-A full-stack task management application built with **React**, **Node.js/Express**, and **SQLite**. TaskFlow helps users manage their daily tasks with features like categories, priorities, due dates, dark mode, and profile management.
+A full-stack task management application built with **React**, **Node.js/Express**, and **SQLite**. TaskFlow helps users manage daily tasks with categories, priorities, due dates/times, dark mode, email OTP verification, forgot password, profile management, and automated email reminders.
 
 ---
 
@@ -20,8 +20,10 @@ A full-stack task management application built with **React**, **Node.js/Express
 - **JWT** (`jsonwebtoken`) — Cookie-based authentication
 - **bcrypt** — Password hashing
 - **Multer** — File uploads for avatars
+- **Nodemailer** — Email sending (OTP, reminders)
 - **cookie-parser** — Cookie parsing middleware
 - **cors** — Cross-origin resource sharing
+- **dotenv** — Environment variable management
 
 ---
 
@@ -32,14 +34,18 @@ TaskFlow/
 │
 ├── backend/
 │   ├── middleware/
-│   │   ├── auth.js                  # JWT authMiddleware — reads cookie, verifies token
-│   │   └── upload.js                # Multer config for avatar uploads
+│   │   ├── auth.js                  # JWT authMiddleware
+│   │   └── upload.js                # Multer avatar upload config
 │   ├── routes/
-│   │   └── authRoutes.js            # /signup /login /me /logout /change-name /upload-avatar /change-password
-│   ├── uploads/                     # Saved avatar images (auto-created)
-│   ├── database.js                  # SQLite connection, table creation, column migrations
-│   ├── server.js                    # Express app entry point + all task API routes
-│   ├── taskflow.db                  # SQLite database file (auto-created)
+│   │   └── authRoutes.js            # All auth routes
+│   ├── utils/
+│   │   ├── mailer.js                # Nodemailer — OTP, reset, reminder emails
+│   │   └── reminderScheduler.js     # Task reminder scheduler (runs every 60s)
+│   ├── uploads/                     # Uploaded avatar images (auto-created)
+│   ├── .env                         # Environment variables (never commit)
+│   ├── database.js                  # SQLite connection + table creation + migrations
+│   ├── server.js                    # Express app + all task API routes
+│   ├── taskflow.db                  # SQLite database (auto-created)
 │   ├── package.json
 │   └── package-lock.json
 │
@@ -50,38 +56,38 @@ TaskFlow/
     │   ├── assets/
     │   ├── components/
     │   │   ├── common/
-    │   │   │   ├── PriorityDot.jsx          # Colored dot for task priority
-    │   │   │   └── SearchBar.jsx            # Search input component
+    │   │   │   ├── PriorityDot.jsx          # Priority color dot
+    │   │   │   └── SearchBar.jsx            # Search input
     │   │   ├── dashboard/
-    │   │   │   └── StatCard.jsx             # Stat card (total/pending/completed/overdue)
+    │   │   │   └── StatCard.jsx             # Stat cards (total/pending/completed/overdue)
     │   │   ├── tasks/
-    │   │   │   ├── AddTaskModal.jsx         # Modal to create new task
-    │   │   │   ├── CategoryCard.jsx         # Category group card for Overview page
-    │   │   │   ├── TaskBadge.jsx            # Category badge (work/personal/study)
-    │   │   │   ├── TaskFilter.jsx           # Filter tabs (All/Today/Pending/Completed/Overdue)
-    │   │   │   ├── TaskItem.jsx             # Task row with expand, edit, delete
+    │   │   │   ├── AddTaskModal.jsx         # Create task modal
+    │   │   │   ├── CategoryCard.jsx         # Category group card (Overview page)
+    │   │   │   ├── TaskBadge.jsx            # Category badge with dark mode
+    │   │   │   ├── TaskFilter.jsx           # Filter tab bar
+    │   │   │   ├── TaskItem.jsx             # Task row — expand, edit, delete + EditTaskModal
     │   │   │   └── TaskList.jsx             # Renders list of TaskItems
-    │   │   ├── ChangePasswordModal.jsx      # Change password form with dark mode
+    │   │   ├── ChangePasswordModal.jsx      # Change password form
     │   │   └── EditProfileModal.jsx         # Edit display name modal
     │   ├── hooks/
-    │   │   └── useTasks.js                  # Task state, CRUD handlers, filters, stats
+    │   │   └── useTasks.js                  # Task state, CRUD, filters, stats
     │   ├── layout/
     │   │   ├── MainLayout.jsx               # Main layout wrapper
-    │   │   └── Sidebar.jsx                  # Navigation sidebar with filters
+    │   │   └── Sidebar.jsx                  # Navigation + category quick filters
     │   ├── pages/
     │   │   ├── auth/
-    │   │   │   └── (AuthPage.jsx)           # Login + Signup page
-    │   │   ├── CompletedPage.jsx            # Completed tasks page
-    │   │   ├── Dashboard.jsx                # Stats + today tasks + efficiency donut
+    │   │   │   └── AuthPage.jsx             # Login, Signup (3-step OTP), Forgot Password
+    │   │   ├── CompletedPage.jsx            # Completed tasks view
+    │   │   ├── Dashboard.jsx                # Stats + today tasks + efficiency chart
     │   │   ├── Overview.jsx                 # Category expandable view
-    │   │   ├── Settings.jsx                 # Profile, dark mode, avatar, password
+    │   │   ├── Settings.jsx                 # Profile, avatar, dark mode, password
     │   │   └── TaskPage.tsx                 # Task list with search + filter tabs
     │   ├── services/
-    │   │   └── TaskService.js               # All API fetch calls (tasks + auth)
+    │   │   └── TaskService.js               # All API fetch calls
     │   ├── utils/
     │   │   └── cropImage.js                 # Canvas crop utility for react-easy-crop
     │   ├── App.css
-    │   ├── App.jsx                          # Root — auth lifecycle, dark mode, screen routing
+    │   ├── App.jsx                          # Root — auth, dark mode, screen routing
     │   ├── index.css
     │   └── main.jsx
     ├── .gitignore
@@ -92,7 +98,7 @@ TaskFlow/
     ├── postcss.config.js
     ├── README.md
     ├── tailwind.config.js
-    └── vite.config.js                       # Vite proxy for /api and /uploads
+    └── vite.config.js
 ```
 
 ---
@@ -102,6 +108,7 @@ TaskFlow/
 ### Prerequisites
 - Node.js v18+
 - npm
+- Gmail account with App Password enabled
 
 ### 1. Clone the repo
 ```bash
@@ -113,8 +120,21 @@ cd TaskFlow
 ```bash
 cd backend
 npm install
+```
+
+Create **`backend/.env`**:
+```env
+GMAIL_USER=your_gmail@gmail.com
+GMAIL_PASS=your_16char_app_password
+JWT_SECRET=your_secret_key_here
+PORT=5000
+```
+
+Start backend:
+```bash
 node server.js
 ```
+
 Backend runs on **http://localhost:5000**
 
 ### 3. Frontend setup
@@ -123,15 +143,14 @@ cd frontend
 npm install
 npm run dev
 ```
+
 Frontend runs on **http://localhost:5173**
 
-> Both servers must be running at the same time in separate terminals.
+> Both servers must be running simultaneously in separate terminals.
 
 ---
 
 ## 🔧 Vite Proxy (`vite.config.js`)
-
-The Vite dev server proxies requests to the backend so cookies work on the same origin:
 
 ```js
 server: {
@@ -142,7 +161,18 @@ server: {
 }
 ```
 
-All frontend fetch calls use relative paths like `/api/tasks` instead of `http://localhost:5000/api/tasks`.
+All frontend fetch calls use relative paths like `/api/tasks`.
+
+---
+
+## 📧 Gmail App Password Setup
+
+Required for OTP emails and task reminders:
+
+1. Go to Google Account → **Security**
+2. Enable **2-Step Verification**
+3. Go to **App Passwords** → Select "Mail" → "Other"
+4. Copy the 16-character password → paste in `.env` as `GMAIL_PASS`
 
 ---
 
@@ -151,41 +181,66 @@ All frontend fetch calls use relative paths like `/api/tasks` instead of `http:/
 **`users` table**
 | Column | Type | Notes |
 |--------|------|-------|
-| id | INTEGER | Primary key, auto-increment |
+| id | INTEGER | Primary key |
 | name | TEXT | Required |
 | email | TEXT | Unique |
 | password | TEXT | Bcrypt hashed |
-| avatar | TEXT | Path to uploaded image e.g. `/uploads/file.jpg` |
-| created_at | TEXT | Default: current timestamp |
+| avatar | TEXT | Path e.g. `/uploads/file.jpg` |
+| created_at | TEXT | Auto timestamp |
 
 **`tasks` table**
 | Column | Type | Notes |
 |--------|------|-------|
-| id | INTEGER | Primary key, auto-increment |
-| user_id | INTEGER | Foreign key → users.id (CASCADE delete) |
+| id | INTEGER | Primary key |
+| user_id | INTEGER | FK → users.id (CASCADE) |
 | title | TEXT | Required |
 | description | TEXT | Optional |
 | category | TEXT | `work` / `personal` / `study` |
 | priority | TEXT | `high` / `medium` / `low` |
-| due_date | TEXT | Format: `YYYY-MM-DD` |
-| due_time | TEXT | Format: `HH:MM` — optional |
+| due_date | TEXT | `YYYY-MM-DD` |
+| due_time | TEXT | `HH:MM` — optional |
 | is_done | INTEGER | `0` = pending, `1` = done |
-| created_at | TEXT | Default: current timestamp |
+| created_at | TEXT | Auto timestamp |
 
-> Migrations run automatically on server start. Missing columns (`avatar`, `due_time`) are added safely via try/catch `ALTER TABLE`.
+**`otp_verification` table**
+| Column | Type | Notes |
+|--------|------|-------|
+| id | INTEGER | Primary key |
+| email | TEXT | Target email |
+| otp | TEXT | 6-digit code |
+| expires_at | INTEGER | Unix timestamp (10 min TTL) |
+| created_at | TEXT | Auto timestamp |
+
+> All migrations run automatically on server start via try/catch `ALTER TABLE`.
 
 ---
 
 ## 🔐 Authentication Flow
 
-1. User signs up or logs in → server signs a JWT → sets it as an `httpOnly` cookie
-2. On every page load, `App.jsx` calls `GET /api/auth/me` with `credentials: "include"`
-3. Server reads the cookie, verifies the JWT, and returns the user object
-4. If valid → user state is set → dashboard is shown
-5. If invalid/expired → user state is `null` → `AuthPage` is shown
-6. On logout → cookie is cleared → user state reset → redirect to login
+### Signup (3-step OTP verified)
+```
+Step 1 → Enter email → POST /api/auth/send-otp → OTP sent to Gmail
+Step 2 → Enter OTP  → POST /api/auth/verify-reset-otp → verified
+Step 3 → Enter name + password → POST /api/auth/signup → account created
+```
 
-`activeScreen` is persisted in `localStorage` so the user returns to the same page after a refresh.
+### Login
+```
+Enter email + password → POST /api/auth/login → JWT cookie set
+```
+
+### Forgot Password (3-step)
+```
+Step 1 → Enter registered email → POST /api/auth/forgot-password
+Step 2 → Enter OTP → POST /api/auth/verify-reset-otp
+Step 3 → Enter new password → POST /api/auth/reset-password
+```
+
+### Session Persistence
+- On every load → `GET /api/auth/me` with `credentials: "include"`
+- Valid cookie → user restored → dashboard shown
+- Invalid/expired → login page shown
+- `activeScreen` persisted in `localStorage`
 
 ---
 
@@ -193,27 +248,31 @@ All frontend fetch calls use relative paths like `/api/tasks` instead of `http:/
 
 ### Auth Routes — `/api/auth`
 
-| Method | Endpoint | Auth Required | Description |
-|--------|----------|---------------|-------------|
-| POST | `/signup` | No | Register new user, sets cookie |
-| POST | `/login` | No | Login, sets JWT cookie |
-| GET | `/me` | Cookie | Returns current user |
-| POST | `/logout` | No | Clears auth cookie |
-| POST | `/change-name` | Cookie | Update display name |
-| POST | `/change-password` | Cookie | Change password (requires current password) |
-| POST | `/upload-avatar` | Cookie | Upload profile photo (multipart/form-data) |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/send-otp` | Send signup OTP to email |
+| POST | `/signup` | Create account (requires OTP) |
+| POST | `/login` | Login, sets JWT cookie |
+| GET | `/me` | Get current user from cookie |
+| POST | `/logout` | Clear auth cookie |
+| POST | `/forgot-password` | Send password reset OTP |
+| POST | `/verify-reset-otp` | Verify OTP (signup + forgot password) |
+| POST | `/reset-password` | Set new password with OTP |
+| POST | `/change-name` | Update display name |
+| POST | `/change-password` | Change password (requires current) |
+| POST | `/upload-avatar` | Upload profile photo |
 
 ### Task Routes — `/api/tasks`
 
-All routes require valid JWT cookie via `authMiddleware`.
+All protected by `authMiddleware`.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/tasks` | Get all tasks for current user |
-| GET | `/api/tasks?status=overdue` | Get only overdue tasks |
-| POST | `/api/tasks` | Create new task |
-| PUT | `/api/tasks/:id` | Update task fields |
-| PATCH | `/api/tasks/:id/done` | Toggle `is_done` |
+| GET | `/api/tasks` | Get all tasks |
+| GET | `/api/tasks?status=overdue` | Get overdue tasks |
+| POST | `/api/tasks` | Create task |
+| PUT | `/api/tasks/:id` | Update task |
+| PATCH | `/api/tasks/:id/done` | Toggle completion |
 | DELETE | `/api/tasks/:id` | Delete task |
 
 ---
@@ -222,74 +281,110 @@ All routes require valid JWT cookie via `authMiddleware`.
 
 ### Task Management
 - Create, edit, delete tasks
-- Toggle task completion with checkbox
-- Expandable task row showing description, due date/time, edit/delete actions
-- Optional due time shown in 12hr AM/PM format with Clock icon
-- Past dates blocked — only today or future dates allowed when creating/editing
+- Toggle completion
+- Expandable row — description, due date/time, edit/delete actions
+- Optional due time shown in 12hr AM/PM format
+- Past dates blocked — only today or future allowed
 
 ### Filters & Search
-- Search tasks by title
+- Search by title
 - Filter tabs: **All, Today, Pending, Completed, Overdue**
-- Category filters: **work, personal, study** (via Sidebar)
-- Today filter shows both pending and completed tasks due today
-- Timezone-safe date comparison using `toLocaleDateString('en-CA')` (fixes IST/UTC offset issues)
+- Sidebar category filters: **Work, Personal, Study**
+- Category filter + tab filter work together (e.g. Work → Pending)
+- Today filter shows both pending and completed tasks
+- Timezone-safe via `toLocaleDateString('en-CA')`
 
 ### Dashboard
-- Stat cards: Total Tasks, Due Today, Completed, Overdue
-- Upcoming Today list (pending tasks due today, max 5 shown)
-- Efficiency donut chart showing completion percentage
+- Stat cards: Total, Due Today, Completed, Overdue
+- Upcoming Today list (max 5 pending tasks)
+- Efficiency donut chart
+
+### Email Features
+- **Signup OTP** — verify email before account creation
+- **Forgot Password OTP** — secure reset flow
+- **Task Reminders** — automatic emails 5 minutes before and at exact due time
+
+### Task Reminder Scheduler
+- Runs every 60 seconds on the backend
+- Sends reminder email 5 minutes before task due time
+- Sends reminder email at exact due time
+- Uses `sentReminders` Set to prevent duplicate emails
+- Only triggers for tasks with `due_time` set and `is_done = 0`
 
 ### Settings
 - Edit display name
-- Upload and crop profile photo (react-easy-crop with zoom slider)
-- Change password with current password verification
+- Upload and crop profile photo (react-easy-crop + zoom slider)
+- Change password
 - Dark / Light mode toggle — persists in `localStorage`
-- Notifications toggle (UI only)
 
 ### Dark Mode
-- Global state lives in `App.jsx` — starts as light mode by default
-- Adds/removes `dark` class on `<html>` for Tailwind dark mode support
-- `darkMode` prop passed down to every component
-- Persists across sessions via `localStorage`
+- Global state in `App.jsx` — light by default
+- Adds/removes `dark` class on `<html>`
+- `darkMode` prop passed to every component
+- Persists via `localStorage`
 
 ---
 
 ## 🐛 Known Issues & Notes
 
-- JWT secret is hardcoded as `"mysecretkey"` — move to `.env` before deploying
-- SQLite `DATE('now')` in the overdue query uses UTC. The frontend filter uses `toLocaleDateString('en-CA')` to handle IST and other non-UTC timezones correctly
-- Avatar images are stored in `/backend/uploads/` — add this folder to `.gitignore`
-- No pagination — all user tasks are loaded in a single query
+- Server must be running for reminders to fire — missed if server is offline at due time
+- SQLite `DATE('now')` uses UTC — frontend uses `toLocaleDateString('en-CA')` for IST compatibility
+- Avatar images stored in `/backend/uploads/` — add to `.gitignore`
+- No pagination — all tasks loaded in one query
 
 ---
 
-## 📦 Key Dependencies
+## 📦 Dependencies
 
-### Frontend (`frontend/package.json`)
+### Frontend
 ```
-react
-react-dom
-vite
-tailwindcss
-postcss
-autoprefixer
+react, react-dom, vite
+tailwindcss, postcss, autoprefixer
 lucide-react
 react-easy-crop
 typescript
 ```
 
-### Backend (`backend/package.json`)
+### Backend
 ```
 express
-sqlite
-sqlite3
+sqlite, sqlite3
 jsonwebtoken
 bcrypt
 multer
+nodemailer
 cookie-parser
 cors
+dotenv
 ```
 
 ---
 
+## 🔒 `.gitignore`
 
+```
+# backend
+node_modules
+.env
+uploads/
+taskflow.db
+
+# frontend
+node_modules
+dist
+```
+
+---
+
+## 🚀 Production Checklist
+
+- [ ] Move all secrets to `.env` (JWT_SECRET, GMAIL credentials)
+- [ ] Set `secure: true` on cookie (requires HTTPS)
+- [ ] Set `sameSite: "strict"` on cookie
+- [ ] Replace SQLite with PostgreSQL or MySQL
+- [ ] Add input validation (express-validator)
+- [ ] Add rate limiting on auth routes (express-rate-limit)
+- [ ] Store avatars in cloud storage (S3, Cloudinary)
+- [ ] Use a job queue for reminders (Bull, BullMQ) instead of setInterval
+- [ ] Add refresh token logic
+- [ ] Add React error boundary
