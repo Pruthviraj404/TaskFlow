@@ -292,15 +292,4 @@ cors
 
 ---
 
-## 🚀 Production Checklist
 
-- [ ] Move `JWT_SECRET` to `.env` file
-- [ ] Set `secure: true` on cookie (requires HTTPS)
-- [ ] Set `sameSite: "strict"` on cookie
-- [ ] Replace SQLite with PostgreSQL or MySQL
-- [ ] Add input validation and sanitization (e.g. express-validator)
-- [ ] Add rate limiting on `/api/auth` routes (e.g. express-rate-limit)
-- [ ] Store avatars in cloud storage (S3, Cloudinary, etc.)
-- [ ] Implement refresh token logic
-- [ ] Add React error boundary
-- [ ] Add loading skeletons for better UX
